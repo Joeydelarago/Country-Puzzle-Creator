@@ -1,61 +1,45 @@
+import itertools
 from logging import Logger
 from typing import List, Tuple
-from pyvista import CellType, UnstructuredGrid
-import json
+
 from OSMPythonTools.nominatim import Nominatim
+from pyvista import CellType, UnstructuredGrid
+from simplification.cutil import simplify_coords
 
 
 def create_region_puzzle(country_name: str, ouput_folder: str) -> None:
-    region_ids, region_names = get_region_ids_list(country_name)
-    region_bondary_points = [get_region_polygon(
-        region) for region in region_ids]
+    region_names = get_region_ids_list(country_name)
+    region_bondary_points = [get_region_polygon(region) for region in region_names]
+    
+    simplify_polygon_borders(region_bondary_points, region_names)
 
     for i, polygon in enumerate(region_bondary_points):
         export_stl(polygon, region_names[i])
 
 
-def get_region_polygon(region_id: str) -> List:
+def get_region_polygon(county: str) -> List:
     nominatim = Nominatim()
-    results = nominatim.query(
-        f"relation/{region_id}", lookup=True, params={"polygon_geojson": 1})
+    results = nominatim.query("", params={"polygon_geojson": 1, "county": county, "country": "Ireland"})
 
     if not results:
-        Logger.warning(f"No result found for region: {region_id}")
+        Logger.warning(f"No result found for county: {county}")
         return
 
     json_result = results.toJSON()[0]
 
-    geojson = json_result["geojson"]["coordinates"]
+    geojson = []
     
-    if len(geojson) > 1:
-        return geojson[0][0]
+    if len(json_result["geojson"]["coordinates"]) > 1:
+        # Choose longest list. This ignores islands and only takes the largest landmass. It does not include holes.
+        geojson = max([p[0] for p in json_result["geojson"]["coordinates"]], key=len)
     else:
-        return geojson[0]
-    
-    poly = points_to_polygon(geojson[0][0])
-    poly2 = points_to_polygon(geojson[1][0])
-    
-    mesh = poly.extrude((0, 0, -1.5), capping=True)
-    mesh.plot(line_width=5, show_edges=True)
-    
-    mesh2 = poly2.extrude((0, 0, -1.5), capping=True)
-    mesh2.plot(line_width=5, show_edges=True)
-
-
-    return geojson[0]
+        geojson = json_result["geojson"]["coordinates"][0]
+        
+    return [(point[0], point[1]) for point in geojson]
 
 
 def get_region_ids_list(country_name: str) -> Tuple[List[int], List[str]]:
-    """
-    Currently just pulling the id list using this query on https://overpass-turbo.eu/
-    [out:csv(::id)][timeout:120];
-    {{geocodeArea:Ireland}}->.searchArea;
-    (
-    relation["admin_level"="6"](area.searchArea);
-    );
-    out body;
-    """
-    return [282760, 282800, 282818, 283426, 283647, 283679, 283732, 284368, 285833, 285915, 285977, 285980, 285981, 332622, 332631, 334372, 334885, 334898, 335330, 335442, 335443, 335444, 335445, 335446, 338539, 1763195], ["County Wicklow", "County Dublin", "County Meath", "County Waterford", "County Monaghan", "County Cavan", "County Donegal", "County Leitrim", "County Kildare", "County Laois", "County Carlow", "County Kilkenny", "County Wexford", "County Kerry", "County Cork", "County Tipperary", "County Clare", "County Limerick", "County Sligo", "County Offaly", "County Roscommon", "County Galway", "County Longford", "County Westmeath", "County Mayo", "County Louth",]
+    return ["Wicklow", "Dublin", "Meath", "Waterford", "Monaghan", "Cavan", "Donegal", "Leitrim", "Kildare", "Laois", "Carlow", "Kilkenny", "Wexford", "Kerry", "County Cork", "Tipperary", "Clare", "Limerick", "Sligo", "Offaly", "Roscommon", "County Galway", "Longford", "Westmeath", "Mayo", "Louth",]
 
 
 def export_stl(points: List[List[int]], filename: str):
@@ -73,6 +57,28 @@ def points_to_polygon(points_2d: List[List[int]]):
     cells = [len(points_2d)] + list(range(len(points_2d)))
     return UnstructuredGrid(cells, [CellType.POLYGON], points_3d).extract_surface()
 
+def simplify_polygon_borders(polygons, region_names):
+    # for each pair of polygons
+    #    if they have overlapping border
+    #        find overlapping border + simplify
+    #             swap that section of border out on both polygons
+        
+    counties_touching = 0
+    for r1, r2 in itertools.combinations(region_names, 2):
+        p1 = polygons[region_names.index(r1)]
+        p2 = polygons[region_names.index(r2)]
+        
+        common_points = set(p1).intersection(set(p2))
+        
+        if common_points:
+            print(f"r1: {r1} r2: {r2} common_points: {len(common_points)}")
+            counties_touching += 1
+            
+        
+    print(f"region name count: {len(region_names)}")
+    print(f"counties_touching: {counties_touching}")
+    
+    # simplified = simplify_coords(coords, 1.0)
 
 if __name__ == "__main__":
     create_region_puzzle("Ireland", "test")
