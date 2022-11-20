@@ -5,7 +5,6 @@ from typing import List, Tuple
 from PIL import Image, ImageDraw
     
 from OSMPythonTools.nominatim import Nominatim
-from simplification.cutil import simplify_coords
 
 logger = logging.getLogger('polygon_tils')
 logging.basicConfig()
@@ -164,9 +163,9 @@ def simplify_polygon(polygon: List[Tuple[int, int]], border_indexes: List[Tuple[
         next_start, _ = border_indexes[(i + 1) % len(border_indexes)]
         
         if start < end:
-            sb = simplify_coords(polygon[start:end], simplfy)
+            sb = polygon[start:end]
         else:
-            sb = simplify_coords(polygon[start:] + polygon[:end], simplfy)
+            sb = polygon[start:] + polygon[:end]
             
         if end < next_start:
             b = polygon[end: next_start]
