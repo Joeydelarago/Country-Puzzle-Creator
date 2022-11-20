@@ -1,1 +1,2 @@
-print("TAOSNETASNOTESNTOEU")
+def run_test():
+    print("saontehasonth")

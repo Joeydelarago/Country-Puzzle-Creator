@@ -22,12 +22,14 @@
         - altair
         - paths:
             - /src/main.py
+            - /test.py
     </py-env>
 </head>
 
 <body>
     <py-script>
-print("test")
+from test import run_test
+run_test()
 
 
     </py-script>
