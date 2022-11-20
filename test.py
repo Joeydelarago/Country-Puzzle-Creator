@@ -14,4 +14,5 @@ def create_models(image_path: str = "test.png", output_path: str = "", invert: b
     if backplate:
         backplate_mesh: Trimesh = create_mesh(image_path, False, True, 1, True)
         backplate_mesh.export("backplate.stl")
+    print("COMPLETED")
 
