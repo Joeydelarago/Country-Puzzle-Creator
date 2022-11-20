@@ -7,9 +7,9 @@ def test_run():
     print("aosntusonth")
     create_models()
     
-def create_models(image_path: str = "test.png", output_path: str = "", invert: bool = True, flat: bool = True, max_height: int = 255, backplate: bool = False) -> None:
+async def create_models(image_path: str = "test.png", output_path: str = "", invert: bool = True, flat: bool = True, max_height: int = 255, backplate: bool = False) -> None:
     print("START")
-    pixels_mesh: Trimesh = create_mesh(image_path, invert, flat, max_height, False)
+    pixels_mesh: Trimesh = await create_mesh(image_path, invert, flat, max_height, False)
     print("END")
     pixels_mesh.export(output_path)
 

@@ -17,8 +17,9 @@ MAX_SIZE = 288
 async def load_image(filename: str, invert: bool = True, flat: bool = False, max_height: int = 25,
                fill: bool = False) -> np.array:
     response = await pyfetch(url="https://cataas.com/cat", method="GET")
+    bytes = await response.byte()
     
-    with Image.open(BytesIO(await response.bytes())) as image:
+    with Image.open(BytesIO(bytes)) as image:
         
         if image.width > MAX_SIZE or image.height > MAX_SIZE:
             image.thumbnail([MAX_SIZE, MAX_SIZE], Image.NEAREST)
@@ -178,8 +179,8 @@ def image_to_faces(image_array: np.array) -> List[List[int]]:
     return tris
 
 
-def create_mesh(image_path: str, invert: bool, flat: bool, max_height: int, fill: bool) -> Trimesh:
-    grayscale_image = load_image(image_path, invert, flat, max_height, fill)
+async def create_mesh(image_path: str, invert: bool, flat: bool, max_height: int, fill: bool) -> Trimesh:
+    grayscale_image = await load_image(image_path, invert, flat, max_height, fill)
     print("A")
     faces = image_to_faces(grayscale_image)
     print("B")
