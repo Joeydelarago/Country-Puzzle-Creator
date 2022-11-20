@@ -1,26 +1,28 @@
 import itertools
 import logging
+import os
 from typing import List, Tuple
 
 from OSMPythonTools.nominatim import Nominatim
 from pyvista import CellType, UnstructuredGrid
 from simplification.cutil import simplify_coords
+from multiprocessing import Process
+
 
 logger = logging.getLogger('main')
+logging.basicConfig()
 
 
-def create_region_puzzle(country_name: str, ouput_folder: str) -> None:
-    region_names = get_region_ids_list(country_name)
-    region_bondary_points = [get_region_polygon(region) for region in region_names]
+def create_region_puzzle(country_name: str, output_folder: str) -> None:
+    county_names = get_county_names_list(country_name)
+    boundary_polygons = [get_county_polygon(county) for county in county_names]
+    simplified_polygons = simplify_polygons(boundary_polygons, county_names)
 
-    simplify_polygon_borders(region_bondary_points, region_names)
-
-    for i, polygon in enumerate(region_bondary_points):
-        # export_stl(polygon, region_names[i])
-        pass
+    for i, polygon in enumerate(simplified_polygons):
+        Process(target=export_stl, args=(polygon, county_names[i], output_folder)).start()
 
 
-def get_region_polygon(county: str) -> List:
+def get_county_polygon(county: str) -> List:
     nominatim = Nominatim()
     results = nominatim.query("", params={"polygon_geojson": 1, "county": county, "country": "Ireland"})
 
@@ -41,16 +43,18 @@ def get_region_polygon(county: str) -> List:
     return [(point[0], point[1]) for point in geojson]
 
 
-def get_region_ids_list(country_name: str) -> Tuple[List[int], List[str]]:
+def get_county_names_list(country_name: str) -> Tuple[List[int], List[str]]:
     return ["Wicklow", "Dublin", "Meath", "Waterford", "Monaghan", "Cavan", "Donegal", "Leitrim", "Kildare", "Laois", "Carlow", "Kilkenny", "Wexford", "Kerry", "County Cork", "Tipperary", "Clare", "Limerick", "Sligo", "Offaly", "Roscommon", "County Galway", "Longford", "Westmeath", "Mayo", "Louth", ]
 
 
-def export_stl(points: List[List[int]], filename: str):
+def export_stl(points: List[List[int]], filename: str,  output_folder: str):
+    logger.info(f"Starting Export: {filename}")
     poly = points_to_polygon(points)
     mesh = poly.extrude((0, 0, -20), capping=True)
     # mesh.plot(line_width=5, show_edges=True)
     # mesh.translate((-1000, 1000, 1000), inplace=True)
-    mesh.save(f"{filename}.stl")
+    mesh.save(os.path.join(output_folder), f"{filename}.stl")
+    logger.info(f"Finished Export: {filename}")
 
 
 def points_to_polygon(points_2d: List[List[int]]):
@@ -61,43 +65,39 @@ def points_to_polygon(points_2d: List[List[int]]):
     return UnstructuredGrid(cells, [CellType.POLYGON], points_3d).extract_surface()
 
 
-def simplify_polygon_borders(polygons: List[List[Tuple[int, int]]], region_names: List[str], snap_distance: int = 400) -> None:
-    # for each pair of polygons
-    #    if they have overlapping border
-    #        find overlapping border + simplify
-    #             swap that section of border out on both polygons
-
+def simplify_polygons(polygons: List[List[Tuple[int, int]]], county_names: List[str], snap_distance: int = 400) -> List[List[Tuple[int, int]]]:
     counties_touching = 0
-    for r1, r2 in itertools.combinations(region_names, 2):
-        p1 = polygons[region_names.index(r1)]
-        p2 = polygons[region_names.index(r2)]
+    
+    for county1, county2 in itertools.combinations(county_names, 2): 
+        p1 = polygons[county_names.index(county1)]
+        p2 = polygons[county_names.index(county2)]
 
-        common_points = list(set(p1).intersection(set(p2)))
+        common_points = list(set(p1).intersection(set(p2))) # Fast check for common border points
 
         if not common_points:
+            # These polygons share no borders, exit early.
             continue
 
         borders_p1 = find_borders(p1, common_points.copy())
         borders_p2 = find_borders(p2, common_points.copy())
-
+        
         borders_p1 = merge_borders(borders_p1, snap_distance)
         borders_p2 = merge_borders(borders_p2, snap_distance)
 
 
         if not len(borders_p1) == len(borders_p2):
-            logger.warning(f"There are more borders on one county with the other. {r1}:{r2}")
-            print(f"b1: {borders_p1} b2: {borders_p2}")
-
-            # print(f"bp1: {borders_p1} bp2: {borders_p2}")
+            logger.warning(f"There are more borders on one county with the other. {county1}:{county2}")
 
         if common_points:
-            # print(f"r1: {r1} r2: {r2} common_points: {len(common_points)}")
             counties_touching += 1
-
-    print(f"region name count: {len(region_names)}")
-    print(f"counties_touching: {counties_touching}")
-
-    # simplified = simplify_coords(coords, 1.0)
+            
+        polygons[county_names.index(county1)] = simplify_polygon(p1, borders_p1)
+        polygons[county_names.index(county2)] = simplify_polygon(p2, borders_p2)
+        
+    logger.info(f"region name count: {len(county_names)}")
+    logger.info(f"counties_touching: {counties_touching}")
+    
+    return polygons
 
 
 def find_borders(full_border: List[Tuple[int, int]], points: List[int]):
@@ -136,7 +136,7 @@ def find_borders(full_border: List[Tuple[int, int]], points: List[int]):
 def merge_borders(borders: List[Tuple[int, int]], snap_distance: int) -> List[Tuple[int, int]]:
     """ Merge nearby borders into single border
     
-    :param borders: List of borders along the edge of a polygon
+    :param borders: List of border start->end indexes along the edge of a polygon
     :param snap_distance: Max distance between points to merge borders. This is distance in list not in km.
     """
     if len(borders) <= 1:
@@ -173,6 +173,39 @@ def merge_borders(borders: List[Tuple[int, int]], snap_distance: int) -> List[Tu
     
     return merged_borders
 
+
+def simplify_polygon(polygon: List[Tuple[int, int]], border_indexes: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+    """ Simplify sections of polygon between (start, end) index pairs from border_indexes.
+
+    Args:
+        polygon (List[Tuple[int, int]]): Polygon to be simplified
+        border_indexes (List[Tuple[int, int]]): List of (start, end) indexes of border sections to be simplified
+    """
+    simplified_polygon = []
+    border_indexes.sort()
+    
+    for i in range(len(border_indexes)):
+        start, end = border_indexes[i]
+        next_start, _ = border_indexes[(i + 1) % len(border_indexes)]
+        
+        if start < end:
+            sb = simplify_coords(polygon[start:end], 1.0)
+        else:
+            sb = simplify_coords(polygon[start:] + polygon[:end], 1.0)
+            
+        if end < next_start:
+            b = polygon[end: next_start]
+        else:
+            b = polygon[end:] + polygon[:next_start]
+        
+        
+        simplified_polygon.extend([(point[0], point[1]) for point in sb])
+        simplified_polygon.extend(b)
+        
+        
+    logger.info(f"Polygon size before: {len(polygon)} after: {len(simplified_polygon)}")
+    
+    return simplified_polygon
 
 if __name__ == "__main__":
     create_region_puzzle("Ireland", "test")
