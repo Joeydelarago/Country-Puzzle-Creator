@@ -4,8 +4,8 @@ from typing import List, Tuple
 from OSMPythonTools.nominatim import Nominatim
 from multiprocessing import Process
 
-from polygon_utils import simplify_polygons
-from stl_utils import export_stl
+from src.polygon_utils import simplify_polygons
+from src.stl_utils import export_stl, show_merged_stl
 
 
 logger = logging.getLogger('main')
@@ -16,6 +16,7 @@ def create_region_puzzle(country_name: str, output_folder: str) -> None:
     county_names = get_county_names_list(country_name)
     boundary_polygons = [get_county_polygon(county) for county in county_names]
     simplified_polygons = simplify_polygons(boundary_polygons, county_names)
+    # show_merged_stl(simplified_polygons)
 
     for i, polygon in enumerate(simplified_polygons):
         Process(target=export_stl, args=(polygon, county_names[i], output_folder)).start()
@@ -47,4 +48,4 @@ def get_county_names_list(country_name: str) -> Tuple[List[int], List[str]]:
 
 
 if __name__ == "__main__":
-    create_region_puzzle("Ireland", "test")
+    create_region_puzzle("Ireland", "output")
