@@ -4,8 +4,8 @@ from typing import List, Tuple
 from OSMPythonTools.nominatim import Nominatim
 from multiprocessing import Process
 
-from src.polygon_utils import simplify_polygons
-from src.stl_utils import export_stl, show_merged_stl
+from polygon_utils import simplify_polygons
+from stl_utils import export_stl, show_merged_stl
 
 
 logger = logging.getLogger('main')

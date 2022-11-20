@@ -55,7 +55,7 @@ def simplify_polygons(polygons: List[List[Tuple[int, int]]], county_names: List[
     return polygons
 
 
-def find_borders(polygon: List[Tuple[int, int]], points: List[int]) -> List[Tuple[int, int]]:
+def find_borders(polygon: List[Tuple[int, int]], common_points: List[int]) -> List[Tuple[int, int]]:
     """ Finds polgons sections that contain common points 
     
     :param full_border: List of pairs of points on a closed polygon
@@ -63,6 +63,7 @@ def find_borders(polygon: List[Tuple[int, int]], points: List[int]) -> List[Tupl
     :return: List of pairs (start_index, end_index) of connected border stretches in full_border
     """
     matching_borders = []
+    points = common_points.copy()
 
     while points:
         start_index = polygon.index(points[0])
@@ -107,11 +108,9 @@ def merge_borders(polygon: List[Tuple[int, int]], borders: List[Tuple[int, int]]
             merged_border = border
             continue
         
-        print("-"*100)
         # FIXME: This should get distance on a sphere
         l = math.dist(polygon[merged_border[1]], polygon[border[0]])
         if l < snap_distance:
-            print(l)
             merged_border = (merged_border[0], border[1])
         else:
             merged_borders.append(merged_border)
@@ -146,11 +145,11 @@ def border_length(polygon: List[Tuple[int, int]], start: int, end: int) -> float
     """
     
     length = 0
-    for p1, p2 in zip(polygon[start:end], polygon[start + 1: end]):
+    for p1, p2 in zip(polygon[start:end + 1], polygon[start + 1: end + 1]):
         length += math.dist(p1, p2)
     return length
 
-def simplify_polygon(polygon: List[Tuple[int, int]], border_indexes: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+def simplify_polygon(polygon: List[Tuple[int, int]], border_indexes: List[Tuple[int, int]], simplfy: int = 1.0) -> List[Tuple[int, int]]:
     """ Simplify sections of polygon between (start, end) index pairs from border_indexes.
 
     Args:
@@ -165,9 +164,9 @@ def simplify_polygon(polygon: List[Tuple[int, int]], border_indexes: List[Tuple[
         next_start, _ = border_indexes[(i + 1) % len(border_indexes)]
         
         if start < end:
-            sb = simplify_coords(polygon[start:end], 1.0)
+            sb = simplify_coords(polygon[start:end], simplfy)
         else:
-            sb = simplify_coords(polygon[start:] + polygon[:end], 1.0)
+            sb = simplify_coords(polygon[start:] + polygon[:end], simplfy)
             
         if end < next_start:
             b = polygon[end: next_start]
