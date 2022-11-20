@@ -175,11 +175,14 @@ def image_to_faces(image_array: np.array) -> List[List[int]]:
 
 def create_mesh(image_path: str, invert: bool, flat: bool, max_height: int, fill: bool) -> Trimesh:
     grayscale_image = load_image(image_path, invert, flat, max_height, fill)
+    print("A")
     faces = image_to_faces(grayscale_image)
+    print("B")
     logging.info("Creating mesh")
 
     builder = MeshBuilder()
     for face in faces:
+        print("FACE")
         builder.add_face(face)
 
     logging.info("Finished creating mesh")
