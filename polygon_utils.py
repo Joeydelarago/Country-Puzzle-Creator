@@ -1,14 +1,16 @@
 import itertools
 import logging
+import math
 from typing import List, Tuple
-
+from PIL import Image, ImageDraw
+    
 from OSMPythonTools.nominatim import Nominatim
 from simplification.cutil import simplify_coords
 
 logger = logging.getLogger('polygon_tils')
 logging.basicConfig()
 
-def simplify_polygons(polygons: List[List[Tuple[int, int]]], county_names: List[str], snap_distance: int = 400) -> List[List[Tuple[int, int]]]:
+def simplify_polygons(polygons: List[List[Tuple[int, int]]], county_names: List[str], snap_distance: int = 0.01) -> List[List[Tuple[int, int]]]:
     """ Simplify common borders between polygons
 
     Args:
@@ -34,8 +36,8 @@ def simplify_polygons(polygons: List[List[Tuple[int, int]]], county_names: List[
         borders_p1 = find_borders(p1, common_points.copy())
         borders_p2 = find_borders(p2, common_points.copy())
         
-        borders_p1 = merge_borders(borders_p1, snap_distance)
-        borders_p2 = merge_borders(borders_p2, snap_distance)
+        borders_p1 = merge_borders(p1, borders_p1, snap_distance)
+        borders_p2 = merge_borders(p2, borders_p2, snap_distance)
 
 
         if not len(borders_p1) == len(borders_p2):
@@ -87,11 +89,11 @@ def find_borders(polygon: List[Tuple[int, int]], points: List[int]) -> List[Tupl
     return matching_borders
 
 
-def merge_borders(borders: List[Tuple[int, int]], snap_distance: int) -> List[Tuple[int, int]]:
+def merge_borders(polygon: List[Tuple[int, int]], borders: List[Tuple[int, int]], snap_distance: int) -> List[Tuple[int, int]]:
     """ Merge nearby borders into single border
     
     :param borders: List of border start->end indexes along the edge of a polygon
-    :param snap_distance: Max distance between points to merge borders. This is distance in list not in km.
+    :param snap_distance: Max distance between points to merge borders. This is distance between coordinates.
     """
     if len(borders) <= 1:
         return borders
@@ -104,8 +106,12 @@ def merge_borders(borders: List[Tuple[int, int]], snap_distance: int) -> List[Tu
         if not merged_border:
             merged_border = border
             continue
-
-        if abs(merged_border[1] - border[0]) < snap_distance:
+        
+        print("-"*100)
+        # FIXME: This should get distance on a sphere
+        l = math.dist(polygon[merged_border[1]], polygon[border[0]])
+        if l < snap_distance:
+            print(l)
             merged_border = (merged_border[0], border[1])
         else:
             merged_borders.append(merged_border)
@@ -127,6 +133,22 @@ def merge_borders(borders: List[Tuple[int, int]], snap_distance: int) -> List[Tu
     
     return merged_borders
 
+def border_length(polygon: List[Tuple[int, int]], start: int, end: int) -> float:
+    """ Find the length of a polgon between start and end points.
+
+    Args:
+        polygons (List[Tuple[int, int]]): List of points of a polygon
+        start (int): The index in polygons to start counting length
+        end (int): The index in polygons to stop counting length
+
+    Returns:
+        float: Distance between polgons[start] and polygons[end]
+    """
+    
+    length = 0
+    for p1, p2 in zip(polygon[start:end], polygon[start + 1: end]):
+        length += math.dist(p1, p2)
+    return length
 
 def simplify_polygon(polygon: List[Tuple[int, int]], border_indexes: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     """ Simplify sections of polygon between (start, end) index pairs from border_indexes.
