@@ -1,14 +1,11 @@
 from trimesh import Trimesh
-import asyncio
 
 from mesh_generating_utils import create_mesh
 
 
 async def test_run():
-    print("aosntusonth")
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(create_models())
-    loop.close()
+    print("aosntusonthaoeuaoeuaoeu")
+    await create_models()
     
 async def create_models(image_path: str = "test.png", output_path: str = "", invert: bool = True, flat: bool = True, max_height: int = 255, backplate: bool = False) -> None:
     print("START")

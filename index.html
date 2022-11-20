@@ -32,7 +32,10 @@
 <body>
     <py-script>
 from test import test_run
-test_run()
+import asyncio
+loop = asyncio.get_event_loop()
+loop.run_until_complete(test_run())
+loop.close()
 
     </py-script>
 </body>
