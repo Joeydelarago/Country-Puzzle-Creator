@@ -6,7 +6,9 @@ from mesh_generating_utils import create_mesh
 
 async def test_run():
     print("aosntusonth")
-    await create_models()
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(create_models())
+    loop.close()
     
 async def create_models(image_path: str = "test.png", output_path: str = "", invert: bool = True, flat: bool = True, max_height: int = 255, backplate: bool = False) -> None:
     print("START")
@@ -22,6 +24,3 @@ async def create_models(image_path: str = "test.png", output_path: str = "", inv
 
 
 if __name__ == "__main__":
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(test_run())
-    loop.close()
