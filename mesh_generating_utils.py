@@ -1,7 +1,9 @@
+from io import BytesIO
 import logging
 import math
 import numpy as np
 
+from pyodide.http import pyfetch
 from typing import List
 from PIL import Image
 from trimesh.base import Trimesh
@@ -12,9 +14,12 @@ from mesh_builder import MeshBuilder
 MAX_SIZE = 288
 
 
-def load_image(filename: str, invert: bool = True, flat: bool = False, max_height: int = 25,
+async def load_image(filename: str, invert: bool = True, flat: bool = False, max_height: int = 25,
                fill: bool = False) -> np.array:
-    with Image.open(filename) as image:
+    response = await pyfetch(url="https://cataas.com/cat", method="GET")
+    
+    with Image.open(BytesIO(await response.bytes())) as image:
+        
         if image.width > MAX_SIZE or image.height > MAX_SIZE:
             image.thumbnail([MAX_SIZE, MAX_SIZE], Image.NEAREST)
 
