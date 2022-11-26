@@ -21,3 +21,4 @@ async def create_models(image_path: str = "test.png", output_path: str = "", inv
 
 
 if __name__ == "__main__":
+    test_run()
