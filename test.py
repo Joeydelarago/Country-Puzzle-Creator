@@ -1,4 +1,5 @@
 from trimesh import Trimesh
+import asyncio
 
 from mesh_generating_utils import create_mesh
 
@@ -20,5 +21,7 @@ async def create_models(image_path: str = "test.png", output_path: str = "", inv
 
 
 
-if __name__ == "__main__":
-    test_run()
+_loop = async_pyodide.CustomLoop()
+asyncio.set_event_loop(_loop)
+_loop.set_task_to_run_until_done(test_run())
+
