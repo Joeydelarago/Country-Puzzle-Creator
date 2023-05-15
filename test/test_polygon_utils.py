@@ -1,24 +1,25 @@
 from typing import List, Tuple
 import pytest
 
-from src.polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons
+from polygon import Polygon
+from polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons, normalize_polygons
 
 
 @pytest.fixture
-def first_polygon() -> List[Tuple[int, int]]:
-    return [(0, 0), (1, 0), (1, 1), (0, 1)]
+def first_polygon() -> Polygon:
+    return Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
 
 @pytest.fixture
-def second_polygon() -> List[Tuple[int, int]]:
-    return [(0, 0), (1, 0), (1, -1), (0, -1)]
+def second_polygon() -> Polygon:
+    return Polygon([(0, 0), (1, 0), (1, -1), (0, -1)])
 
 @pytest.fixture
-def common_points(first_polygon, second_polygon) -> List[int]:
-    return list(set(first_polygon).intersection(set(second_polygon)))
+def common_points(first_polygon, second_polygon) -> List[Tuple[int, int]]:
+    return list(set(first_polygon.points).intersection(set(second_polygon.points)))
 
 @pytest.fixture
 def complex_polygon():
-    return [(0, 0), (0.2, 0), (0.3, 0), (0.4, 0), (0.5, 0), (1, 0), (1, -1), (0, -1)]
+    return Polygon([(0, 0), (0.2, 0), (0.3, 0), (0.4, 0), (0.5, 0), (1, 0), (1, -1), (0, -1)])
 
 def test_border_length(first_polygon):
     assert border_length(first_polygon, 0, 1) == 1

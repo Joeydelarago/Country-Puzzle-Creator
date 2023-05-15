@@ -1,20 +1,21 @@
 import itertools
 import logging
 import math
+
 from typing import List, Tuple
-from PIL import Image, ImageDraw
-    
-from OSMPythonTools.nominatim import Nominatim
 from simplification.cutil import simplify_coords
+
+from polygon import Polygon
 
 logger = logging.getLogger('polygon_tils')
 logging.basicConfig()
 
-def simplify_polygons(polygons: List[List[Tuple[int, int]]], county_names: List[str], snap_distance: int = 0.01) -> List[List[Tuple[int, int]]]:
+
+def simplify_polygons(polygons: List[Polygon], county_names: List[str], snap_distance: int = 0.01) -> List[Polygon]:
     """ Simplify common borders between polygons
 
     Args:
-        polygons (List[List[Tuple[int, int]]]): List of polygons to simplify
+        polygons (Polygon): List of polygons to simplify
         county_names (List[str]): _description_
         snap_distance (int, optional): _description_. Defaults to 400.
 
@@ -22,12 +23,10 @@ def simplify_polygons(polygons: List[List[Tuple[int, int]]], county_names: List[
         List[List[Tuple[int, int]]]: _description_
     """
     counties_touching = 0
-    
-    for county1, county2 in itertools.combinations(county_names, 2): 
-        p1 = polygons[county_names.index(county1)]
-        p2 = polygons[county_names.index(county2)]
 
-        common_points = list(set(p1).intersection(set(p2))) # Fast check for common border points
+    for p1, p2 in itertools.combinations(polygons, 2):
+        assert isinstance(p1, Polygon)
+        common_points = list(set(p1.points).intersection(set(p2.points)))  # Fast check for common border points
 
         if not common_points:
             # These polygons share no borders, exit early.
@@ -39,50 +38,48 @@ def simplify_polygons(polygons: List[List[Tuple[int, int]]], county_names: List[
         borders_p1 = merge_borders(p1, borders_p1, snap_distance)
         borders_p2 = merge_borders(p2, borders_p2, snap_distance)
 
-
         if not len(borders_p1) == len(borders_p2):
-            logger.warning(f"There are more borders on one county with the other. {county1}:{county2}")
+            logger.warning(f"There are more borders on one county with the other. {p1.name}:{p2.name}")
 
         if common_points:
             counties_touching += 1
-            
-        polygons[county_names.index(county1)] = simplify_polygon(p1, borders_p1)
-        polygons[county_names.index(county2)] = simplify_polygon(p2, borders_p2)
-        
+
+        # polygons[county_names.index(county1)] = simplify_polygon(p1, borders_p1)
+        # polygons[county_names.index(county2)] = simplify_polygon(p2, borders_p2)
+
     logger.info(f"region name count: {len(county_names)}")
     logger.info(f"counties_touching: {counties_touching}")
     
     return polygons
 
 
-def find_borders(polygon: List[Tuple[int, int]], common_points: List[int]) -> List[Tuple[int, int]]:
+def find_borders(polygon: Polygon, common_points: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     """ Finds polgons sections that contain common points 
-    
-    :param full_border: List of pairs of points on a closed polygon
-    :param points: 
+
+    :param polygon: Polygon containing points
+    :param common_points: list of points along border to match with polygon
     :return: List of pairs (start_index, end_index) of connected border stretches in full_border
     """
     matching_borders = []
-    points = common_points.copy()
-
-    while points:
-        start_index = polygon.index(points[0])
+    common = common_points.copy()
+    while common:
+        start_index = polygon.points.index(common[0])
         end_index = (start_index + 1) % (len(polygon) - 1)
         
         while True:
-            points.remove(polygon[start_index])
+            common.remove(polygon[start_index])
             
             new_start_index = start_index - 1
             if new_start_index < 0:
                 new_start_index = len(polygon) - 1
                 
-            if polygon[new_start_index] not in points:
+            if polygon[new_start_index] not in common:
                 break
                 
             start_index = new_start_index
         
-        while polygon[end_index] in points:
-            points.remove(polygon[end_index])
+        while polygon[end_index] in common:
+            common.remove(polygon[end_index])
             end_index = (end_index + 1) % (len(polygon) - 1)
 
         matching_borders.append((start_index, end_index))
@@ -90,7 +87,7 @@ def find_borders(polygon: List[Tuple[int, int]], common_points: List[int]) -> Li
     return matching_borders
 
 
-def merge_borders(polygon: List[Tuple[int, int]], borders: List[Tuple[int, int]], snap_distance: int) -> List[Tuple[int, int]]:
+def merge_borders(polygon: Polygon, borders: List[Tuple[int, int]], snap_distance: int) -> List[Tuple[int, int]]:
     """ Merge nearby borders into single border
     
     :param borders: List of border start->end indexes along the edge of a polygon
@@ -132,11 +129,12 @@ def merge_borders(polygon: List[Tuple[int, int]], borders: List[Tuple[int, int]]
     
     return merged_borders
 
-def border_length(polygon: List[Tuple[int, int]], start: int, end: int) -> float:
+
+def border_length(polygon: Polygon, start: int, end: int) -> float:
     """ Find the length of a polgon between start and end points.
 
     Args:
-        polygons (List[Tuple[int, int]]): List of points of a polygon
+        polygon (Polygon): Polygon containing list of points
         start (int): The index in polygons to start counting length
         end (int): The index in polygons to stop counting length
 
@@ -149,14 +147,15 @@ def border_length(polygon: List[Tuple[int, int]], start: int, end: int) -> float
         length += math.dist(p1, p2)
     return length
 
-def simplify_polygon(polygon: List[Tuple[int, int]], border_indexes: List[Tuple[int, int]], simplfy: int = 1.0) -> List[Tuple[int, int]]:
+
+def simplify_polygon(polygon: Polygon, border_indexes: List[Tuple[int, int]], simplfy: int = 1.0) -> Polygon:
     """ Simplify sections of polygon between (start, end) index pairs from border_indexes.
 
     Args:
         polygon (List[Tuple[int, int]]): Polygon to be simplified
         border_indexes (List[Tuple[int, int]]): List of (start, end) indexes of border sections to be simplified
     """
-    simplified_polygon = []
+    simplified_polygon = Polygon([], polygon.name)
     border_indexes.sort()
     
     for i in range(len(border_indexes)):
@@ -172,12 +171,10 @@ def simplify_polygon(polygon: List[Tuple[int, int]], border_indexes: List[Tuple[
             b = polygon[end: next_start]
         else:
             b = polygon[end:] + polygon[:next_start]
-        
-        
-        simplified_polygon.extend([(point[0], point[1]) for point in sb])
-        simplified_polygon.extend(b)
-        
-        
+
+        simplified_polygon.points.extend([(point[0], point[1]) for point in sb])
+        simplified_polygon.points.extend(b)
+
     logger.info(f"Polygon size before: {len(polygon)} after: {len(simplified_polygon)}")
-    
+
     return simplified_polygon
