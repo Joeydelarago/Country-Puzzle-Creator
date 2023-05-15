@@ -1,8 +1,8 @@
 from typing import List, Tuple
 import pytest
 
-from polygon import Polygon
-from polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons, normalize_polygons
+from src.polygon import Polygon
+from src.polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons, normalize_polygons, export_svg
 
 
 @pytest.fixture
@@ -52,3 +52,11 @@ def test_simplify_polygons_returns_subset_of_polygon(first_polygon, second_polyg
     
     assert set(polygons[0]).intersection(set(first_polygon)) == set(polygons[0])
     assert set(polygons[1]).intersection(set(second_polygon)) == set(polygons[1])
+
+def test_normalize_polygons(first_polygon):
+    polygon = normalize_polygons([first_polygon])[0]
+    assert polygon.min_x() == 0
+    assert polygon.min_y() == 0
+
+def test_create_polygon_svg(first_polygon):
+    export_svg([first_polygon], "test.svg")

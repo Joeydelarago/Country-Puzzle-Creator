@@ -1,13 +1,14 @@
 import itertools
 import logging
 import math
+import svg
 
 from typing import List, Tuple
 from simplification.cutil import simplify_coords
 
 from polygon import Polygon
 
-logger = logging.getLogger('polygon_tils')
+logger = logging.getLogger('polygon_utils')
 logging.basicConfig()
 
 
@@ -25,7 +26,6 @@ def simplify_polygons(polygons: List[Polygon], county_names: List[str], snap_dis
     counties_touching = 0
 
     for p1, p2 in itertools.combinations(polygons, 2):
-        assert isinstance(p1, Polygon)
         common_points = list(set(p1.points).intersection(set(p2.points)))  # Fast check for common border points
 
         if not common_points:
@@ -34,7 +34,7 @@ def simplify_polygons(polygons: List[Polygon], county_names: List[str], snap_dis
 
         borders_p1 = find_borders(p1, common_points.copy())
         borders_p2 = find_borders(p2, common_points.copy())
-        
+
         borders_p1 = merge_borders(p1, borders_p1, snap_distance)
         borders_p2 = merge_borders(p2, borders_p2, snap_distance)
 
@@ -44,8 +44,8 @@ def simplify_polygons(polygons: List[Polygon], county_names: List[str], snap_dis
         if common_points:
             counties_touching += 1
 
-        # polygons[county_names.index(county1)] = simplify_polygon(p1, borders_p1)
-        # polygons[county_names.index(county2)] = simplify_polygon(p2, borders_p2)
+        # p1.points = simplify_polygon(p1, borders_p1).points
+        # p2.points = simplify_polygon(p2, borders_p2).points
 
     logger.info(f"region name count: {len(county_names)}")
     logger.info(f"counties_touching: {counties_touching}")
@@ -55,6 +55,7 @@ def simplify_polygons(polygons: List[Polygon], county_names: List[str], snap_dis
 
 def find_borders(polygon: Polygon, common_points: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     """ Finds polgons sections that contain common points 
+
 
     :param polygon: Polygon containing points
     :param common_points: list of points along border to match with polygon
@@ -178,3 +179,61 @@ def simplify_polygon(polygon: Polygon, border_indexes: List[Tuple[int, int]], si
     logger.info(f"Polygon size before: {len(polygon)} after: {len(simplified_polygon)}")
 
     return simplified_polygon
+
+
+def export_svg(polygons: List[Polygon], filename: str):
+    """ Export one or more polygons as SVG files """
+    elements = []
+
+    red = 0
+    for poly in polygons:
+        svg_poly = svg.Polygon(
+            points = list(itertools.chain(*(poly.points))),
+            # stroke=f"rgb({red}, 100, 100)",
+            fill=f"rgb({red}, 100, 100)",
+            stroke_width=5,
+        ),
+        red += round(255/len(polygons))
+        elements.append(svg_poly)
+
+    bounding_box = get_polygons_bounding_box(polygons)
+    svg_polygons = svg.SVG(width=bounding_box[2], height=bounding_box[3], elements=elements)
+
+    with open(filename, "w") as test_svg:
+        test_svg.write(str(svg_polygons))
+
+
+def normalize_polygons(polygons: List[Polygon], max=1000) -> List[Polygon]:
+    """ Normalize the coordinates of polygons between 0 and max """
+
+    bounding_box = get_polygons_bounding_box(polygons)
+    min_x = bounding_box[0]
+    min_y = bounding_box[1]
+    max_x = bounding_box[2]
+    max_y = bounding_box[3]
+
+    # Adjust min to 0, 0
+    for poly in polygons:
+        poly.points = list(map(lambda point: (((point[0] - min_x)/(max_x - min_x))*max, ((point[1] - min_y)/(max_y - min_y))*max), poly.points))
+
+    return polygons
+
+
+def get_polygons_bounding_box(polygons: List[Polygon]) -> Tuple[int, int, int, int]:
+    """ Returns the bounding box of a list of polygons """
+    if not polygons:
+        raise ValueError("Input list is empty")
+
+    min_x = polygons[0].min_x()
+    min_y = polygons[0].min_y()
+    max_x = polygons[0].max_x()
+    max_y = polygons[0].max_y()
+
+    # Find min values
+    for poly in polygons:
+        min_x = min(poly.min_x(), min_x)
+        min_y = min(poly.min_y(), min_y)
+        max_x = max(poly.max_x(), max_x)
+        max_y = max (poly.max_y(), max_y)
+
+    return min_x, min_y, max_x, max_y
