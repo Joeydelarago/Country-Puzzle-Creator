@@ -12,7 +12,7 @@ logger = logging.getLogger('polygon_utils')
 logging.basicConfig()
 
 
-def simplify_polygons(polygons: List[Polygon], county_names: List[str], snap_distance: int = 0.01) -> List[Polygon]:
+def simplify_polygons(polygons: List[Polygon], snap_distance: int = 0.01) -> List[Polygon]:
     """ Simplify common borders between polygons
 
     Args:
@@ -51,7 +51,6 @@ def simplify_polygons(polygons: List[Polygon], county_names: List[str], snap_dis
     for poly in polygons:
         poly.points = simplify_polygon(poly).points
 
-    logger.info(f"region name count: {len(county_names)}")
     logger.info(f"counties_touching: {counties_touching}")
     
     return polygons
@@ -207,11 +206,30 @@ def export_svg(polygons: List[Polygon], filename: str):
     bounding_box = get_polygons_bounding_box(polygons)
     svg_polygons = svg.SVG(width=bounding_box[2], height=bounding_box[3], elements=elements)
 
-    with open(filename, "w") as test_svg:
-        test_svg.write(str(svg_polygons))
+    with open(filename, "w") as svg_file:
+        svg_file.write(str(svg_polygons))
 
 
-def normalize_polygons(polygons: List[Polygon], max=1000) -> List[Polygon]:
+def get_mercator_polygon(polygon) -> Polygon:
+    """ Transform polygon points from lat lng to mercator projection """
+    mercator_points = []
+    for point in polygon.points:
+        lat_rad = math.radians(point[1])
+        long_rad = math.radians(point[0])
+
+        earth_radius = 6371000
+
+        x = earth_radius * long_rad
+        y = earth_radius * math.log(math.tan(math.pi / 4 + lat_rad / 2))
+
+        mercator_points.append((x, y))
+
+    polygon.points = mercator_points
+
+    return polygon
+
+
+def normalize_polygons(polygons: List[Polygon], height=1000) -> List[Polygon]:
     """ Normalize the coordinates of polygons between 0 and max """
 
     bounding_box = get_polygons_bounding_box(polygons)
@@ -220,9 +238,11 @@ def normalize_polygons(polygons: List[Polygon], max=1000) -> List[Polygon]:
     max_x = bounding_box[2]
     max_y = bounding_box[3]
 
+    width = abs(height * ((max_x - min_x)/max_x)) # change width to match aspect ratio of bounding box
+
     # Adjust min to 0, 0
     for poly in polygons:
-        poly.points = list(map(lambda point: (((point[0] - min_x)/(max_x - min_x))*max, ((point[1] - min_y)/(max_y - min_y))*max), poly.points))
+        poly.points = list(map(lambda point: (((point[0] - min_x)/(max_x - min_x))*width, ((point[1] - min_y)/(max_y - min_y))*height), poly.points))
 
     return polygons
 

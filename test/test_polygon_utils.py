@@ -43,12 +43,12 @@ def test_find_borders_shared(first_polygon, second_polygon, common_points):
     assert borders_1 == borders_2
     
 def test_simplify_polygons_same_size(first_polygon, second_polygon):
-    polygons = simplify_polygons([first_polygon, second_polygon], ["first_poly", "second_poly"])
+    polygons = simplify_polygons([first_polygon, second_polygon])
     
     assert len(polygons[0]) == len(polygons[1])
     
 def test_simplify_polygons_returns_subset_of_polygon(first_polygon, second_polygon):
-    polygons = simplify_polygons([first_polygon, second_polygon], ["first_poly", "second_poly"])
+    polygons = simplify_polygons([first_polygon, second_polygon])
     
     assert set(polygons[0]).intersection(set(first_polygon)) == set(polygons[0])
     assert set(polygons[1]).intersection(set(second_polygon)) == set(polygons[1])

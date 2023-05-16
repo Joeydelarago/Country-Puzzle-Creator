@@ -10,7 +10,7 @@ logging.basicConfig()
 def export_stl(points: List[Tuple[int, int]], filename: str,  output_folder: str) -> None:
     logger.info(f"Starting Export: {filename}")
     poly = points_to_pyvista_polygon(points)
-    mesh = poly.extrude((0, 0, -20), capping=True)
+    mesh = poly.extrude((0, 0, -2), capping=True)
     mesh.save(os.path.join(output_folder, f"{filename}.stl"))
     logger.info(f"Finished Export: {filename}")
     
@@ -35,6 +35,6 @@ def show_merged_stl(polygons: List[List[Tuple[int, int]]]) -> None:
 
 def points_to_pyvista_polygon(points_2d: List[Tuple[int, int]]) -> UnstructuredGrid:
     """ Takes in List of polygon edges as (x, y) Tuples and outputs pyvista polygon. """
-    points_3d = [[point[0]*100, point[1]*100, 0] for point in points_2d]
+    points_3d = [[point[0]*20, point[1]*20, 0] for point in points_2d]
     cells = [len(points_2d)] + list(range(len(points_2d)))
     return UnstructuredGrid(cells, [CellType.POLYGON], points_3d).extract_surface()
