@@ -17,8 +17,9 @@ def create_region_puzzle(country_name: str, output_folder: str) -> None:
     county_names = get_county_names_list(country_name)
     boundary_polygons = [get_county_polygon(county) for county in county_names]
     simplified_polygons = simplify_polygons(boundary_polygons, county_names)
-    # show_merged_stl(simplified_polygons)
-    export_svg(normalize_polygons(simplified_polygons), "test.svg")
+
+    # show_merged_stl(simplified_polygons) # Debug
+    # export_svg(normalize_polygons(simplified_polygons), "test.svg") # Debug
 
     for i, polygon in enumerate(simplified_polygons):
         Process(target=export_stl, args=(polygon, county_names[i], output_folder)).start()

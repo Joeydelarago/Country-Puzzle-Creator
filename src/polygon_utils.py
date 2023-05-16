@@ -44,8 +44,12 @@ def simplify_polygons(polygons: List[Polygon], county_names: List[str], snap_dis
         if common_points:
             counties_touching += 1
 
-        # p1.points = simplify_polygon(p1, borders_p1).points
-        # p2.points = simplify_polygon(p2, borders_p2).points
+        p1.points = simplify_polygon(p1, borders_p1).points
+        p2.points = simplify_polygon(p2, borders_p2).points
+
+    # Simplify the rest of the borders
+    for poly in polygons:
+        poly.points = simplify_polygon(poly).points
 
     logger.info(f"region name count: {len(county_names)}")
     logger.info(f"counties_touching: {counties_touching}")
@@ -149,7 +153,7 @@ def border_length(polygon: Polygon, start: int, end: int) -> float:
     return length
 
 
-def simplify_polygon(polygon: Polygon, border_indexes: List[Tuple[int, int]], simplfy: int = 1.0) -> Polygon:
+def simplify_polygon(polygon: Polygon, border_indexes: List[Tuple[int, int]] = [], simplfy: int = 0.01) -> Polygon:
     """ Simplify sections of polygon between (start, end) index pairs from border_indexes.
 
     Args:
@@ -158,6 +162,10 @@ def simplify_polygon(polygon: Polygon, border_indexes: List[Tuple[int, int]], si
     """
     simplified_polygon = Polygon([], polygon.name)
     border_indexes.sort()
+
+    if not border_indexes:
+        sb = simplify_coords(polygon, simplfy)
+        simplified_polygon.points.extend([(point[0], point[1]) for point in sb])
     
     for i in range(len(border_indexes)):
         start, end = border_indexes[i]
