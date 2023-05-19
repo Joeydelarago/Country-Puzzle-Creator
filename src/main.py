@@ -23,7 +23,7 @@ def create_region_puzzle(country_name: str, output_folder: str) -> None:
     # export_svg(normalize_polygons(county_polygons), "normal.svg")  # Debug
 
     for i, polygon in enumerate(county_polygons):
-        Process(target=export_stl, args=(polygon, county_names[i], output_folder)).start()
+        Process(target=export_stl, args=(polygon, polygon.name, output_folder)).start()
 
 
 def get_county_polygon(county: str) -> Polygon:
