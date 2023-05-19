@@ -1,13 +1,13 @@
 from typing import List, Tuple
 import pytest
 
-from src.polygon import Polygon
+from src.mappolygon import MapPolygon
 from src.polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons
 
 
 @pytest.fixture
-def polygon() -> Polygon:
-    return Polygon([(0, 0), (1, 0), (1, -1), (0, -1)])
+def polygon() -> MapPolygon:
+    return MapPolygon([(0, 0), (1, 0), (1, -1), (0, -1)])
 
 @pytest.fixture
 def complex_polygon():

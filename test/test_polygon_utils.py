@@ -1,17 +1,17 @@
 from typing import List, Tuple
 import pytest
 
-from src.polygon import Polygon
+from src.mappolygon import MapPolygon
 from src.polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons, normalize_polygons, export_svg
 
 
 @pytest.fixture
-def first_polygon() -> Polygon:
-    return Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+def first_polygon() -> MapPolygon:
+    return MapPolygon([(0, 0), (1, 0), (1, 1), (0, 1)])
 
 @pytest.fixture
-def second_polygon() -> Polygon:
-    return Polygon([(0, 0), (1, 0), (1, -1), (0, -1)])
+def second_polygon() -> MapPolygon:
+    return MapPolygon([(0, 0), (1, 0), (1, -1), (0, -1)])
 
 @pytest.fixture
 def common_points(first_polygon, second_polygon) -> List[Tuple[int, int]]:
@@ -19,7 +19,7 @@ def common_points(first_polygon, second_polygon) -> List[Tuple[int, int]]:
 
 @pytest.fixture
 def complex_polygon():
-    return Polygon([(0, 0), (0.2, 0), (0.3, 0), (0.4, 0), (0.5, 0), (1, 0), (1, -1), (0, -1)])
+    return MapPolygon([(0, 0), (0.2, 0), (0.3, 0), (0.4, 0), (0.5, 0), (1, 0), (1, -1), (0, -1)])
 
 def test_border_length(first_polygon):
     assert border_length(first_polygon, 0, 1) == 1

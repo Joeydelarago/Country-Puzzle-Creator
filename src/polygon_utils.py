@@ -6,17 +6,17 @@ import svg
 from typing import List, Tuple
 from simplification.cutil import simplify_coords
 
-from polygon import Polygon
+from mappolygon import MapPolygon
 
 logger = logging.getLogger('polygon_utils')
 logging.basicConfig()
 
 
-def simplify_polygons(polygons: List[Polygon], snap_distance: int = 0.01) -> List[Polygon]:
+def simplify_polygons(polygons: List[MapPolygon], snap_distance: int = 0.01) -> List[MapPolygon]:
     """ Simplify common borders between polygons
 
     Args:
-        polygons (Polygon): List of polygons to simplify
+        polygons (MapPolygon): List of polygons to simplify
         county_names (List[str]): _description_
         snap_distance (int, optional): _description_. Defaults to 400.
 
@@ -56,7 +56,7 @@ def simplify_polygons(polygons: List[Polygon], snap_distance: int = 0.01) -> Lis
     return polygons
 
 
-def find_borders(polygon: Polygon, common_points: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
+def find_borders(polygon: MapPolygon, common_points: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     """ Finds polgons sections that contain common points 
 
 
@@ -91,7 +91,7 @@ def find_borders(polygon: Polygon, common_points: List[Tuple[int, int]]) -> List
     return matching_borders
 
 
-def merge_borders(polygon: Polygon, borders: List[Tuple[int, int]], snap_distance: int) -> List[Tuple[int, int]]:
+def merge_borders(polygon: MapPolygon, borders: List[Tuple[int, int]], snap_distance: int) -> List[Tuple[int, int]]:
     """ Merge nearby borders into single border
     
     :param borders: List of border start->end indexes along the edge of a polygon
@@ -134,11 +134,11 @@ def merge_borders(polygon: Polygon, borders: List[Tuple[int, int]], snap_distanc
     return merged_borders
 
 
-def border_length(polygon: Polygon, start: int, end: int) -> float:
+def border_length(polygon: MapPolygon, start: int, end: int) -> float:
     """ Find the length of a polgon between start and end points.
 
     Args:
-        polygon (Polygon): Polygon containing list of points
+        polygon (MapPolygon): Polygon containing list of points
         start (int): The index in polygons to start counting length
         end (int): The index in polygons to stop counting length
 
@@ -152,14 +152,14 @@ def border_length(polygon: Polygon, start: int, end: int) -> float:
     return length
 
 
-def simplify_polygon(polygon: Polygon, border_indexes: List[Tuple[int, int]] = [], simplfy: int = 0.01) -> Polygon:
+def simplify_polygon(polygon: MapPolygon, border_indexes: List[Tuple[int, int]] = [], simplfy: int = 0.01) -> MapPolygon:
     """ Simplify sections of polygon between (start, end) index pairs from border_indexes.
 
     Args:
         polygon (List[Tuple[int, int]]): Polygon to be simplified
         border_indexes (List[Tuple[int, int]]): List of (start, end) indexes of border sections to be simplified
     """
-    simplified_polygon = Polygon([], polygon.name)
+    simplified_polygon = MapPolygon([], polygon.name)
     border_indexes.sort()
 
     if not border_indexes:
@@ -188,7 +188,7 @@ def simplify_polygon(polygon: Polygon, border_indexes: List[Tuple[int, int]] = [
     return simplified_polygon
 
 
-def export_svg(polygons: List[Polygon], filename: str):
+def export_svg(polygons: List[MapPolygon], filename: str):
     """ Export one or more polygons as SVG files """
     elements = []
 
@@ -210,7 +210,7 @@ def export_svg(polygons: List[Polygon], filename: str):
         svg_file.write(str(svg_polygons))
 
 
-def get_mercator_polygon(polygon) -> Polygon:
+def get_mercator_polygon(polygon) -> MapPolygon:
     """ Transform polygon points from lat lng to mercator projection """
     mercator_points = []
     for point in polygon.points:
@@ -229,7 +229,7 @@ def get_mercator_polygon(polygon) -> Polygon:
     return polygon
 
 
-def normalize_polygons(polygons: List[Polygon], height=1000) -> List[Polygon]:
+def normalize_polygons(polygons: List[MapPolygon], height=1000) -> List[MapPolygon]:
     """ Normalize the coordinates of polygons between 0 and max """
 
     bounding_box = get_polygons_bounding_box(polygons)
@@ -247,7 +247,7 @@ def normalize_polygons(polygons: List[Polygon], height=1000) -> List[Polygon]:
     return polygons
 
 
-def get_polygons_bounding_box(polygons: List[Polygon]) -> Tuple[int, int, int, int]:
+def get_polygons_bounding_box(polygons: List[MapPolygon]) -> Tuple[int, int, int, int]:
     """ Returns the bounding box of a list of polygons """
     if not polygons:
         raise ValueError("Input list is empty")

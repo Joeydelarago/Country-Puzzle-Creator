@@ -1,7 +1,7 @@
 from typing import List, Tuple
 
 
-class Polygon:
+class MapPolygon:
     def __init__(self, points: List[Tuple[int, int]], name=None):
         self.points: List[Tuple[int, int]] = points
         self.name = name
