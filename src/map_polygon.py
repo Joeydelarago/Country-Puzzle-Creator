@@ -1,9 +1,12 @@
-from typing import List, Tuple
+import itertools
+import logging
+from typing import List, Tuple, Dict, Type
 
 
 class MapPolygon:
     def __init__(self, points: List[Tuple[int, int]], name=None):
-        self.points: List[Tuple[int, int]] = points
+        self.borders = {}
+        self.points = points
         self.name = name
 
     def min_x(self):

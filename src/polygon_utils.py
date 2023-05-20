@@ -6,7 +6,7 @@ import svg
 from typing import List, Tuple
 from simplification.cutil import simplify_coords
 
-from mappolygon import MapPolygon
+from map_polygon import MapPolygon
 
 logger = logging.getLogger('polygon_utils')
 logging.basicConfig()
@@ -25,6 +25,7 @@ def simplify_polygons(polygons: List[MapPolygon], snap_distance: int = 0.01) -> 
     """
     counties_touching = 0
 
+    # Simplify the borders between polygons
     for p1, p2 in itertools.combinations(polygons, 2):
         common_points = list(set(p1.points).intersection(set(p2.points)))  # Fast check for common border points
 
@@ -47,9 +48,14 @@ def simplify_polygons(polygons: List[MapPolygon], snap_distance: int = 0.01) -> 
         p1.points = simplify_polygon(p1, borders_p1).points
         p2.points = simplify_polygon(p2, borders_p2).points
 
-    # Simplify the rest of the borders
+        p1.borders[p2] = borders_p1
+        p2.borders[p1] = borders_p2
+
+    # Simplify the borders not adjacent to polygons
     for poly in polygons:
-        poly.points = simplify_polygon(poly).points
+        poly.points = simplify_polygon(poly, poly.outside_borders(), simplfy=0.1).points
+
+
 
     logger.info(f"counties_touching: {counties_touching}")
     
@@ -93,7 +99,7 @@ def find_borders(polygon: MapPolygon, common_points: List[Tuple[int, int]]) -> L
 
 def merge_borders(polygon: MapPolygon, borders: List[Tuple[int, int]], snap_distance: int) -> List[Tuple[int, int]]:
     """ Merge nearby borders into single border
-    
+
     :param borders: List of border start->end indexes along the edge of a polygon
     :param snap_distance: Max distance between points to merge borders. This is distance between coordinates.
     """
@@ -152,7 +158,7 @@ def border_length(polygon: MapPolygon, start: int, end: int) -> float:
     return length
 
 
-def simplify_polygon(polygon: MapPolygon, border_indexes: List[Tuple[int, int]] = [], simplfy: int = 0.01) -> MapPolygon:
+def simplify_polygon(polygon: MapPolygon, border_indexes: List[Tuple[int, int]] = [], simplfy: float = 0.01) -> MapPolygon:
     """ Simplify sections of polygon between (start, end) index pairs from border_indexes.
 
     Args:
@@ -195,7 +201,7 @@ def export_svg(polygons: List[MapPolygon], filename: str):
     red = 0
     for poly in polygons:
         svg_poly = svg.Polygon(
-            points = list(itertools.chain(*(poly.points))),
+            points=list(itertools.chain(*(poly.points))),
             # stroke=f"rgb({red}, 100, 100)",
             fill=f"rgb({red}, 100, 100)",
             stroke_width=5,

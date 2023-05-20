@@ -1,7 +1,7 @@
 from typing import List, Tuple
 import pytest
 
-from src.mappolygon import MapPolygon
+from src.map_polygon import MapPolygon
 from src.polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons, normalize_polygons, export_svg
 
 

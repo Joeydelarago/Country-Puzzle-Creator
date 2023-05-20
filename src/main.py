@@ -5,7 +5,7 @@ from OSMPythonTools.nominatim import Nominatim
 from multiprocessing import Process
 
 from polygon_utils import simplify_polygons, export_svg, normalize_polygons, get_mercator_polygon
-from mappolygon import MapPolygon
+from map_polygon import MapPolygon
 from stl_utils import export_stl, show_merged_stl
 
 
@@ -19,8 +19,7 @@ def create_region_puzzle(country_name: str, output_folder: str) -> None:
     county_polygons = simplify_polygons(county_polygons)
     county_polygons = [get_mercator_polygon(poly) for poly in county_polygons]
 
-    # export_svg(county_polygons, "mercator.svg")  # Debug
-    # export_svg(normalize_polygons(county_polygons), "normal.svg")  # Debug
+    export_svg(normalize_polygons(county_polygons), "test.svg")  # Debug
 
     for i, polygon in enumerate(county_polygons):
         Process(target=export_stl, args=(polygon, polygon.name, output_folder)).start()
