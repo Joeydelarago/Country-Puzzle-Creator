@@ -1,17 +1,30 @@
 from typing import List, Tuple
 import pytest
 
-from src.polygon import Polygon
-from src.polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons, normalize_polygons, export_svg
+from src.map_polygon import MapPolygon
+from src.polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons, normalize_polygons, \
+    export_svg, is_convex
 
 
 @pytest.fixture
-def first_polygon() -> Polygon:
-    return Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])
+def first_polygon() -> MapPolygon:
+    return MapPolygon([(0, 0), (1, 0), (1, 1), (0, 1)])
 
 @pytest.fixture
-def second_polygon() -> Polygon:
-    return Polygon([(0, 0), (1, 0), (1, -1), (0, -1)])
+def second_polygon() -> MapPolygon:
+    return MapPolygon([(1, -1), (0, -1), (0, 0), (1, 0)])
+
+@pytest.fixture
+def p0() -> Tuple[int, int]:
+    return (0, 0)
+
+@pytest.fixture
+def p1() -> Tuple[int, int]:
+    return (1, 0)
+
+@pytest.fixture
+def p2() -> Tuple[int, int]:
+    return (1, 1)
 
 @pytest.fixture
 def common_points(first_polygon, second_polygon) -> List[Tuple[int, int]]:
@@ -19,7 +32,7 @@ def common_points(first_polygon, second_polygon) -> List[Tuple[int, int]]:
 
 @pytest.fixture
 def complex_polygon():
-    return Polygon([(0, 0), (0.2, 0), (0.3, 0), (0.4, 0), (0.5, 0), (1, 0), (1, -1), (0, -1)])
+    return MapPolygon([(0, 0), (0.2, 0), (0.3, 0), (0.4, 0), (0.5, 0), (1, 0), (1, -1), (0, -1)])
 
 def test_border_length(first_polygon):
     assert border_length(first_polygon, 0, 1) == 1
@@ -40,6 +53,8 @@ def test_find_borders_shared(first_polygon, second_polygon, common_points):
     borders_1 = find_borders(first_polygon, common_points)
     borders_2 = find_borders(second_polygon, common_points)
     assert len(borders_1) == len(borders_2)
+    assert borders_1[0] == (0, 2)
+    assert borders_2[0] == (2, 0)
     assert borders_1 == borders_2
     
 def test_simplify_polygons_same_size(first_polygon, second_polygon):
@@ -60,3 +75,7 @@ def test_normalize_polygons(first_polygon):
 
 def test_create_polygon_svg(first_polygon):
     export_svg([first_polygon], "test.svg")
+
+def test_is_convex(p0, p1, p2):
+    assert is_convex(p0, p1, p2) == True
+    assert is_convex(p2, p1, p0) == False

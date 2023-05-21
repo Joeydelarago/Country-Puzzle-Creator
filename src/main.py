@@ -5,7 +5,7 @@ from OSMPythonTools.nominatim import Nominatim
 from multiprocessing import Process
 
 from polygon_utils import simplify_polygons, export_svg, normalize_polygons, get_mercator_polygon
-from polygon import Polygon
+from map_polygon import MapPolygon
 from stl_utils import export_stl, show_merged_stl
 
 
@@ -19,14 +19,13 @@ def create_region_puzzle(country_name: str, output_folder: str) -> None:
     county_polygons = simplify_polygons(county_polygons)
     county_polygons = [get_mercator_polygon(poly) for poly in county_polygons]
 
-    # export_svg(county_polygons, "mercator.svg")  # Debug
-    # export_svg(normalize_polygons(county_polygons), "normal.svg")  # Debug
+    export_svg(normalize_polygons(county_polygons), "test.svg")  # Debug
 
     for i, polygon in enumerate(county_polygons):
         Process(target=export_stl, args=(polygon, polygon.name, output_folder)).start()
 
 
-def get_county_polygon(county: str) -> Polygon:
+def get_county_polygon(county: str) -> MapPolygon:
     nominatim = Nominatim()
     results = nominatim.query("", params={"polygon_geojson": 1, "county": county, "country": "Ireland"})
 
@@ -44,7 +43,7 @@ def get_county_polygon(county: str) -> Polygon:
     else:
         geojson = json_result["geojson"]["coordinates"][0]
 
-    return Polygon([(point[0], point[1]) for point in geojson], county)
+    return MapPolygon([(point[0], point[1]) for point in geojson], county)
 
 
 def get_county_names_list(country_name: str) -> Tuple[List[int], List[str]]:
