@@ -2,7 +2,8 @@ from typing import List, Tuple
 import pytest
 
 from src.map_polygon import MapPolygon
-from src.polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons, normalize_polygons, export_svg
+from src.polygon_utils import border_length, find_borders, simplify_polygon, simplify_polygons, normalize_polygons, \
+    export_svg, is_convex
 
 
 @pytest.fixture
@@ -74,3 +75,7 @@ def test_normalize_polygons(first_polygon):
 
 def test_create_polygon_svg(first_polygon):
     export_svg([first_polygon], "test.svg")
+
+def test_is_convex(p0, p1, p2):
+    assert is_convex(p0, p1, p2) == True
+    assert is_convex(p2, p1, p0) == False

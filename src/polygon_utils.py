@@ -3,7 +3,7 @@ import logging
 import math
 import svg
 
-from typing import List, Tuple
+from typing import List, Tuple, Dict
 from simplification.cutil import simplify_coords
 
 from map_polygon import MapPolygon
@@ -26,6 +26,26 @@ def simplify_polygons(polygons: List[MapPolygon], snap_distance: int = 0.01) -> 
     counties_touching = 0
 
     # Simplify the borders between polygons
+    update_borders(polygons, snap_distance)
+    for poly in polygons:
+        simplified = simplify_polygon(poly, poly.flattened_borders())
+        poly.points = simplified.points
+        # poly.points = simplify_polygon(poly, poly.flattened_borders()).points
+
+    # Simplify the borders not adjacent to other polygons
+    update_borders(polygons, snap_distance)
+    for poly in polygons:
+        simplified = simplify_polygon(poly, poly.outside_borders())
+        poly.points = simplified.points
+
+
+    logger.info(f"counties_touching: {counties_touching}")
+    
+    return polygons
+
+
+def update_borders(polygons: List[MapPolygon], snap_distance: int = 0.01) -> None:
+    """ Update ass polygons border lists to include all overlapping borders between polygons """
     for p1, p2 in itertools.combinations(polygons, 2):
         common_points = list(set(p1.points).intersection(set(p2.points)))  # Fast check for common border points
 
@@ -42,25 +62,8 @@ def simplify_polygons(polygons: List[MapPolygon], snap_distance: int = 0.01) -> 
         if not len(borders_p1) == len(borders_p2):
             logger.warning(f"There are more borders on one county with the other. {p1.name}:{p2.name}")
 
-        if common_points:
-            counties_touching += 1
-
-        p1.points = simplify_polygon(p1, borders_p1).points
-        p2.points = simplify_polygon(p2, borders_p2).points
-
         p1.borders[p2] = borders_p1
         p2.borders[p1] = borders_p2
-
-    # Simplify the borders not adjacent to polygons
-    for poly in polygons:
-        poly.points = simplify_polygon(poly, poly.outside_borders(), simplfy=0.1).points
-
-
-
-    logger.info(f"counties_touching: {counties_touching}")
-    
-    return polygons
-
 
 def find_borders(polygon: MapPolygon, common_points: List[Tuple[int, int]]) -> List[Tuple[int, int]]:
     """ Finds polgons sections that contain common points 
@@ -133,7 +136,7 @@ def merge_borders(polygon: MapPolygon, borders: List[Tuple[int, int]], snap_dist
     first = merged_borders[0]
     last = merged_borders[len(merged_borders) - 1]
     if abs(first[0] - last[1]) < snap_distance:
-        merged_border = merged_border = (last[1], first[0])
+        merged_border = (last[1], first[0])
         merged_borders = merged_borders[1:-1]
         merged_borders.append(merged_border)
     
@@ -265,6 +268,11 @@ def get_polygons_bounding_box(polygons: List[MapPolygon]) -> Tuple[int, int, int
 
     # Find min values
     for poly in polygons:
+
+        if not poly.points:
+            logger.warning(f"There are not points in poly {poly.name}")
+            continue
+
         min_x = min(poly.min_x(), min_x)
         min_y = min(poly.min_y(), min_y)
         max_x = max(poly.max_x(), max_x)
