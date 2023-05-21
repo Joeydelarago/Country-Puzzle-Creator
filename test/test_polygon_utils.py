@@ -11,7 +11,19 @@ def first_polygon() -> MapPolygon:
 
 @pytest.fixture
 def second_polygon() -> MapPolygon:
-    return MapPolygon([(0, 0), (1, 0), (1, -1), (0, -1)])
+    return MapPolygon([(1, -1), (0, -1), (0, 0), (1, 0)])
+
+@pytest.fixture
+def p0() -> Tuple[int, int]:
+    return (0, 0)
+
+@pytest.fixture
+def p1() -> Tuple[int, int]:
+    return (1, 0)
+
+@pytest.fixture
+def p2() -> Tuple[int, int]:
+    return (1, 1)
 
 @pytest.fixture
 def common_points(first_polygon, second_polygon) -> List[Tuple[int, int]]:
@@ -40,6 +52,8 @@ def test_find_borders_shared(first_polygon, second_polygon, common_points):
     borders_1 = find_borders(first_polygon, common_points)
     borders_2 = find_borders(second_polygon, common_points)
     assert len(borders_1) == len(borders_2)
+    assert borders_1[0] == (0, 2)
+    assert borders_2[0] == (2, 0)
     assert borders_1 == borders_2
     
 def test_simplify_polygons_same_size(first_polygon, second_polygon):

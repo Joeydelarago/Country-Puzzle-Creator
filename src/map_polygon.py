@@ -34,7 +34,7 @@ class MapPolygon:
         outside_borders = []
         flattened_borders = self.flattened_borders()
         for i in range(len(flattened_borders)):
-            outside_borders.append((flattened_borders[i-1][1], flattened_borders[i][0]))
+            outside_borders.append((flattened_borders[i-1][1] - 1, flattened_borders[i][0]))
         return outside_borders
 
 

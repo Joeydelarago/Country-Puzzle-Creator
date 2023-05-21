@@ -74,7 +74,7 @@ def find_borders(polygon: MapPolygon, common_points: List[Tuple[int, int]]) -> L
     common = common_points.copy()
     while common:
         start_index = polygon.points.index(common[0])
-        end_index = (start_index + 1) % (len(polygon) - 1)
+        end_index = (start_index + 1) % len(polygon)
         
         while True:
             common.remove(polygon[start_index])
@@ -181,8 +181,8 @@ def simplify_polygon(polygon: MapPolygon, border_indexes: List[Tuple[int, int]] 
         else:
             sb = simplify_coords(polygon[start:] + polygon[:end], simplfy)
             
-        if end < next_start:
-            b = polygon[end: next_start]
+        if end - 1 <= next_start: # -1 because end and start are using for slicing (slicing is end exclusive)
+            b = polygon[end:next_start]
         else:
             b = polygon[end:] + polygon[:next_start]
 
